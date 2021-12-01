@@ -15,55 +15,81 @@ namespace Test_2
 {
     public partial class Form1 : Form
     {
+
+        //Создание переменых для выделение памяти в начале запуска приложения
+        Bitmap b;
+        Moduls moduls;
+
+        string response;
+        string urlVideo = "http://uniserver.vesysoft.ru:8123/core/plugins/Camera1/Video?Width=596&Height=409&auth_user=user&auth_password=user";
+        string urlMass = "http://uniserver.vesysoft.ru:8123/core/SendMsg?Name=AutoScale1_GetParameters&auth_user=user&auth_password=user";
+
         public Form1()
         {
             InitializeComponent();
+
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            string url1 = "http://uniserver.vesysoft.ru:8123/core/plugins/WeightIndicator1/Enable?Enable=true&auth_user=user&auth_password=user";
-            string url2 = "http://uniserver.vesysoft.ru:8123/core/SendMsg?Name=WeightIndicator1_GetParameters&auth_user=user&auth_password=user";
 
+        }
 
-            HttpWebRequest httpWebRequest1 = (HttpWebRequest)WebRequest.Create(url1);
+        //Получение данных о весах
+        private async void timer1_Tick(object sender, EventArgs e)
+        {
+            //Отсылаем запрос по url и получаем ответ в виде потока
+            HttpWebRequest httpWebRequest2 = (HttpWebRequest)WebRequest.Create(urlMass);
 
-            HttpWebResponse httpWebResponse1 = (HttpWebResponse)httpWebRequest1.GetResponse();
+            HttpWebResponse httpWebResponse2 = await httpWebRequest2.GetResponseAsync() as HttpWebResponse;
 
-
-            HttpWebRequest httpWebRequest2 = (HttpWebRequest)WebRequest.Create(url2);
-
-            HttpWebResponse httpWebResponse2 = (HttpWebResponse)httpWebRequest2.GetResponse();
-
-            string response;
-
+            //читаем поток и выводим структуру json файла в переменную
             using (StreamReader streamReader = new StreamReader(httpWebResponse2.GetResponseStream()))
             {
-                response = streamReader.ReadToEnd();
+                response = await streamReader.ReadToEndAsync();
             }
 
-            var modul = JsonConvert.DeserializeObject<Moduls>(response);
-
-            textBox1.Text = modul.Massa.ToString();
-
-            //string url3 = "http://uniserver.vesysoft.ru:8123/core/SendMsg?Name=Camera1_Enable&Value=true&auth_user=user&auth_password=user";
-            string url4 = "http://uniserver.vesysoft.ru:8123/core/plugins/Camera1/Video?Width=596&Height=409&auth_user=user&auth_password=user";
-            //HttpWebRequest httpWebRequest1 = (HttpWebRequest)WebRequest.Create(url3);
-
-            //HttpWebResponse httpWebResponse1 = (HttpWebResponse)httpWebRequest1.GetResponse();
+            //Десерелезируем переменную в объект класса, совподающий по структуре переменных с json файлом
+            moduls = JsonConvert.DeserializeObject<Moduls>(response);
 
 
-            HttpWebRequest httpWebRequest3 = (HttpWebRequest)WebRequest.Create(url4);
+            //помещаем данные о весах
+            textBox1.Text = moduls.Massa.ToString();
 
-            HttpWebResponse httpWebResponse3 = (HttpWebResponse)httpWebRequest3.GetResponse();
+        }
 
-            //using (StreamReader streamReader = new StreamReader(httpWebResponse2.GetResponseStream()))
-            //{
-            //    pictureBox1 = streamReader.ReadToEnd();
-            //}
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            //проверяем включены таймеры
+            if ((timer1.Enabled & timer1.Enabled) != true)
+            {
+                button1.Text = "Стоп";
+                timer1.Enabled = true;
+                timer2.Enabled = true;
+            }
+            else
+            {
+                button1.Text = "Старт";
+                timer1.Enabled = false;
+                timer2.Enabled = false;
+            }
+        }
 
-            Bitmap b = new Bitmap(httpWebResponse3.GetResponseStream());
+        //Получение данных с видеокамеры
+        private async void timer2_Tick(object sender, EventArgs e)
+        {
+            //Отсылаем запрос по url и получаем ответ в виде потока
+            HttpWebRequest httpWebRequest3 = (HttpWebRequest)WebRequest.Create(urlVideo);
 
+            HttpWebResponse httpWebResponse3 = await httpWebRequest3.GetResponseAsync() as HttpWebResponse;
+
+            //читаем поток и преобразуем в тип данных bitmap
+            using (StreamReader stream = new StreamReader(httpWebResponse3.GetResponseStream()))
+            {
+                b = new Bitmap(stream.BaseStream);
+            }
+
+            //помещаем картинку в picturebox
             pictureBox1.Image = b;
         }
     }
